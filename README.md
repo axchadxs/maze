@@ -24,15 +24,9 @@ A Python-based maze generator and solver with real-time visualization using Tkin
 ### Installation
 
 1. Clone the repository
-```bash
-git clone [your-repo-url]
-cd maze-generator-solver
-```
+2. Open in IDE 
+3. Run the application
 
-2. Run the application
-```bash
-python maze_visualizer.py
-```
 
 ### Quick Start
 1. Click "Generate Maze" to create a random maze

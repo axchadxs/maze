@@ -4,11 +4,14 @@ import random
 from typing import List, Tuple, Dict
 
 
-class MazeCell:
+
+class MazeCell:    
+    # A single cell in the maze
     
     def __init__(self, row: int, col: int):
         self.row = row
         self.col = col
+        # True means wall exists
         self.walls = {'N': True, 'S': True, 'E': True, 'W': True}
         self.visited = False
         self.in_path = False
@@ -18,13 +21,15 @@ class MazeCell:
 
 
 class MazeVisualizer:
-    
-    COLOR_START = "#ff00ff"      
-    COLOR_END = '#ff00ff'        
-    COLOR_VISITED = "#56b6f7"    
-    COLOR_PATH = "#ff0000"       
-    COLOR_EMPTY = 'white'
-    COLOR_WALL = '#2c3e50'       
+    # Main application class for the maze generator and solver visualization.
+    # Handles the GUI, maze state, and visualization of the algorithms
+    # Colors used in the maze
+    COLOR_START = "#ff00ff" 
+    COLOR_END = "#ff00ff"
+    COLOR_VISITED = "#56b6f7"
+    COLOR_PATH = "#ff0000"
+    COLOR_EMPTY = "white"
+    COLOR_WALL = "#2c3e50"
     
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -52,7 +57,7 @@ class MazeVisualizer:
         self.init_empty_maze()
 
     def init_empty_maze(self):
-        """Create an empty (full-walled) maze grid and draw it without starting generation."""
+        # Create an empty (full-walled) maze grid and draw it without starting generation
         # Ensure rows/cols are current from size_var (but don't throw errors during init)
         try:
             size = int(self.size_var.get())
@@ -127,7 +132,6 @@ class MazeVisualizer:
         ).pack(side=tk.LEFT, padx=3)
         
         speed_frame = ttk.Frame(control_frame)
-        # Removed speed control slider to simplify UI. Use fixed default speed.
         self.speed = 5  # Default speed (1 slow .. 10 fast)
         
         # Stats panel
@@ -156,25 +160,25 @@ class MazeVisualizer:
         # Bind resize event
         self.canvas.bind('<Configure>', lambda e: self.draw_maze())
         
-        # Legend removed to simplify UI
     
     def generate_new_maze(self):
-        """Initialize and start maze generation."""
-        
+        # Initialize and start maze generation.
+        # Validates size input and prepares the grid for the generation algorithm
+        # Prevent multiple generations running at once
         if self.algorithm_running:
             return
         
         try:
             size = int(self.size_var.get())
             if size < 5:
-                self.update_stats_text("Error: size must be at least 5")
+                self.update_stats_text("Maze size too small - minimum is 5x5")
                 return
             if size > 50:
-                self.update_stats_text("Error: size must be at most 50")
+                self.update_stats_text("Size too large, maximum is 50x50")
                 return
             self.rows = self.cols = size
         except ValueError:
-            self.update_stats_text("Error: invalid size - please enter a number")
+            self.update_stats_text("Please enter a valid number for the size")
             return
         
         self.end = (self.rows - 1, self.cols - 1)
@@ -194,10 +198,12 @@ class MazeVisualizer:
         self.root.after(10, lambda: self.generate_maze_dfs(0, 0, []))
     
     def generate_maze_dfs(self, row: int, col: int, stack: List[Tuple[int, int]]):
+        # Generate maze using DFS - removes walls to create paths
         
         if not self.algorithm_running:
             return
         
+        # Mark current cell as visited and update progress
         current = self.maze[row][col]
         current.visited = True
         self.gen_steps += 1
@@ -248,11 +254,14 @@ class MazeVisualizer:
             self.update_stats_text(f"Maze generated. Total cells: {self.gen_steps} | Size: {self.rows}x{self.cols}")
     
     def solve_maze_dfs(self):
-        """Initialize and start maze solving."""
+        # Initialize and start maze solving using depth-first search.
+        # Explores possible paths until it finds the end, marking the solution path
         
+        # Prevent multiple solves running at once
         if self.algorithm_running:
             return
         
+        # Ensure we have a maze to solve
         if not self.maze:
             self.update_stats_text("Error: generate a maze first")
             return
@@ -287,7 +296,7 @@ class MazeVisualizer:
             
             efficiency = (self.path_length / self.solve_steps * 100) if self.solve_steps > 0 else 0
             self.update_stats_text(
-                f"✅ SOLVED! Path Length: {self.path_length} | "
+                f"SOLVED! Path Length: {self.path_length} | "
                 f"Cells Explored: {self.solve_steps} | "
                 f"Efficiency: {efficiency:.1f}%"
             )
@@ -329,10 +338,12 @@ class MazeVisualizer:
         return False
     
     def draw_maze(self):
-        
+        # Renders the current state of the maze on the canvas.
+        # Handles dynamic resizing, cell coloring, and wall drawing
+        # Clear previous drawing
         self.canvas.delete("all")
         
-        # Calculate cell size to fit canvas
+        # Calculate cell size to fit canvas while maintaining square cells
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
         
@@ -408,26 +419,24 @@ class MazeVisualizer:
                     )
     
     def update_stats(self, solved: bool = False):
-        """Update statistics display during algorithm execution."""
+        # Update statistics display during algorithm execution
         
         if solved:
             efficiency = (self.path_length / self.solve_steps * 100) if self.solve_steps > 0 else 0
-            text = (f"✅ SOLVED! Path Length: {self.path_length} | "
-                   f"Cells Explored: {self.solve_steps} | "
-                   f"Efficiency: {efficiency:.1f}%")
+            text = f"Found solution! Length: {self.path_length}, Explored {self.solve_steps} cells"
         elif self.solve_steps > 0:
-            text = f"🎯 Solving... Cells Explored: {self.solve_steps}"
+            text = f"Finding path... ({self.solve_steps} cells checked)"
         else:
-            text = f"🔨 Generating... Cells Created: {self.gen_steps}/{self.rows * self.cols}"
+            text = f"Creating maze... ({self.gen_steps}/{self.rows * self.cols})"
         
         self.stats_label.config(text=text)
     
     def update_stats_text(self, text: str):
-        """Update statistics label with custom text."""
+        # Update statistics label with custom text
         self.stats_label.config(text=text)
     
     def reset_maze(self):
-        """Reset the maze to unsolved state."""
+        # Reset the maze to unsolved state
         
         if self.algorithm_running:
             self.algorithm_running = False
@@ -443,14 +452,17 @@ class MazeVisualizer:
         self.solve_steps = 0
         self.path_length = 0
         self.draw_maze()
-        self.update_stats_text(f"🔄 Maze reset - ready to solve! Size: {self.rows}x{self.cols}")
+        self.update_stats_text(f"Maze reset - ready to solve! Size: {self.rows}x{self.cols}")
 
 
 def main():
+    # Create and start the maze application
+    # Initialize the main window
     root = tk.Tk()
+    # Create the visualizer instance
     app = MazeVisualizer(root)
+    # Start the event loop
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()

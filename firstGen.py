@@ -4,15 +4,11 @@ import random
 from typing import List, Tuple, Dict
 
 
-
 class MazeCell:    
-    # A single cell in the maze
-    
     def __init__(self, row: int, col: int):
         self.row = row
         self.col = col
-        # True means wall exists
-        self.walls = {'N': True, 'S': True, 'E': True, 'W': True}
+        self.walls = {'N': True, 'S': True, 'E': True, 'W': True}  # True = wall exists
         self.visited = False
         self.in_path = False
         
@@ -21,9 +17,7 @@ class MazeCell:
 
 
 class MazeVisualizer:
-    # Main application class for the maze generator and solver visualization.
-    # Handles the GUI, maze state, and visualization of the algorithms
-    # Colors used in the maze
+    # Color scheme
     COLOR_START = "#ff00ff" 
     COLOR_END = "#ff00ff"
     COLOR_VISITED = "#56b6f7"
@@ -53,12 +47,10 @@ class MazeVisualizer:
         self.start_time = 0
         
         self.setup_ui()
-        # Do not auto-generate a maze on startup. Initialize a full-walled grid and draw it.
         self.init_empty_maze()
 
     def init_empty_maze(self):
-        # Create an empty (full-walled) maze grid and draw it without starting generation
-        # Ensure rows/cols are current from size_var (but don't throw errors during init)
+       
         try:
             size = int(self.size_var.get())
             if 5 <= size <= 50:
@@ -71,7 +63,6 @@ class MazeVisualizer:
         self.solve_steps = 0
         self.path_length = 0
 
-        # Initialize maze grid with all walls intact
         self.maze = [[MazeCell(r, c) for c in range(self.cols)] for r in range(self.rows)]
 
         for row in self.maze:
@@ -84,7 +75,6 @@ class MazeVisualizer:
         self.update_stats_text("Ready to generate maze...")
         
     def setup_ui(self):
-        
         title_frame = ttk.Frame(self.root)
         title_frame.pack(side=tk.TOP, fill=tk.X, pady=10)
         
@@ -100,6 +90,7 @@ class MazeVisualizer:
         control_frame = ttk.LabelFrame(self.root, text="Controls", padding="15")
         control_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=5)
         
+        # Size input
         size_frame = ttk.Frame(control_frame)
         size_frame.pack(side=tk.LEFT, padx=10)
         ttk.Label(size_frame, text="Maze Size:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
@@ -107,6 +98,7 @@ class MazeVisualizer:
         size_entry = ttk.Entry(size_frame, textvariable=self.size_var, width=6, font=("Arial", 10))
         size_entry.pack(side=tk.LEFT, padx=5)
         
+        # Control buttons
         btn_frame = ttk.Frame(control_frame)
         btn_frame.pack(side=tk.LEFT, padx=10)
         
@@ -114,14 +106,21 @@ class MazeVisualizer:
             btn_frame,
             text="Generate Maze",
             command=self.generate_new_maze,
-            width=18
+            width=20
         ).pack(side=tk.LEFT, padx=3)
         
         ttk.Button(
             btn_frame,
-            text="Solve Maze",
+            text="Solve Maze using DFS",
             command=self.solve_maze_dfs,
-            width=18
+            width=20
+        ).pack(side=tk.LEFT, padx=3)
+        
+        ttk.Button(
+            btn_frame,
+            text="Solve Maze using BFS",
+            command=self.solve_maze_bfs,
+            width=20
         ).pack(side=tk.LEFT, padx=3)
         
         ttk.Button(
@@ -132,9 +131,9 @@ class MazeVisualizer:
         ).pack(side=tk.LEFT, padx=3)
         
         speed_frame = ttk.Frame(control_frame)
-        self.speed = 5  # Default speed (1 slow .. 10 fast)
+        self.speed = 5
         
-        # Stats panel
+        # Statistics panel
         stats_frame = ttk.LabelFrame(self.root, text="Statistics", padding="10")
         stats_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=5)
         
@@ -150,24 +149,20 @@ class MazeVisualizer:
         )
         self.stats_label.pack(fill=tk.X)
         
-        # Canvas for maze
+        # Canvas for maze rendering
         canvas_frame = ttk.Frame(self.root)
         canvas_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH, padx=20, pady=10)
         
         self.canvas = tk.Canvas(canvas_frame, bg='white', highlightthickness=2, highlightbackground='#bdc3c7')
         self.canvas.pack(expand=True, fill=tk.BOTH)
         
-        # Bind resize event
         self.canvas.bind('<Configure>', lambda e: self.draw_maze())
-        
     
     def generate_new_maze(self):
-        # Initialize and start maze generation.
-        # Validates size input and prepares the grid for the generation algorithm
-        # Prevent multiple generations running at once
         if self.algorithm_running:
             return
         
+        # Validate size input
         try:
             size = int(self.size_var.get())
             if size < 5:
@@ -186,87 +181,69 @@ class MazeVisualizer:
         self.solve_steps = 0
         self.path_length = 0
         
-        # Initialize maze grid
         self.maze = [[MazeCell(r, c) for c in range(self.cols)] for r in range(self.rows)]
+        
+        # Generate maze instantly without animation
+        self.generate_maze_instant()
         
         self.canvas.delete("all")
         self.draw_maze()
-        self.update_stats_text("Generating maze...")
-        
-        # Start DFS generation
-        self.algorithm_running = True
-        self.root.after(10, lambda: self.generate_maze_dfs(0, 0, []))
+        self.update_stats_text(f"Maze generated. Size: {self.rows}x{self.cols}")
     
-    def generate_maze_dfs(self, row: int, col: int, stack: List[Tuple[int, int]]):
-        # Generate maze using DFS - removes walls to create paths
+    def generate_maze_instant(self):
+        # Generate maze using DFS without visualization (instant, non-animated)
+        stack = [(0, 0)]
+        self.maze[0][0].visited = True
         
-        if not self.algorithm_running:
-            return
+        while stack:
+            row, col = stack[-1]
+            current = self.maze[row][col]
+            
+            # Define all four directions
+            directions = [
+                ('N', -1, 0),
+                ('S', 1, 0),
+                ('E', 0, 1),
+                ('W', 0, -1)
+            ]
+            
+            # Find unvisited neighbors
+            neighbors = []
+            for direction, dr, dc in directions:
+                nr, nc = row + dr, col + dc
+                if (0 <= nr < self.rows and 0 <= nc < self.cols and
+                        not self.maze[nr][nc].visited):
+                    neighbors.append((direction, nr, nc))
+            
+            if neighbors:
+                # Choose random neighbor
+                direction, nr, nc = random.choice(neighbors)
+                
+                # Remove walls
+                current.walls[direction] = False
+                opposite = {'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E'}
+                self.maze[nr][nc].walls[opposite[direction]] = False
+                
+                self.maze[nr][nc].visited = True
+                stack.append((nr, nc))
+            else:
+                stack.pop()
         
-        # Mark current cell as visited and update progress
-        current = self.maze[row][col]
-        current.visited = True
-        self.gen_steps += 1
-        
-        # Define directions: North, South, East, West
-        directions = [
-            ('N', -1, 0),
-            ('S', 1, 0),
-            ('E', 0, 1),
-            ('W', 0, -1)
-        ]
-        
-        # Get unvisited neighbors
-        neighbors = []
-        for direction, dr, dc in directions:
-            nr, nc = row + dr, col + dc
-            if (0 <= nr < self.rows and 0 <= nc < self.cols and
-                    not self.maze[nr][nc].visited):
-                neighbors.append((direction, nr, nc))
-        
-        if neighbors:
-            # Choose random unvisited neighbor (randomness creates maze variety)
-            direction, nr, nc = random.choice(neighbors)
-            
-            # Remove walls between current and chosen neighbor
-            current.walls[direction] = False
-            opposite = {'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E'}
-            self.maze[nr][nc].walls[opposite[direction]] = False
-            
-            # Push current to stack and move to neighbor
-            stack.append((row, col))
-            
-            self.draw_maze()
-            self.update_stats()
-            
-            delay = max(1, 100 - self.speed * 9)
-            self.root.after(delay, lambda: self.generate_maze_dfs(nr, nc, stack))
-            
-        elif stack:
-            # Backtrack to previous cell
-            prev_row, prev_col = stack.pop()
-            delay = max(1, 100 - self.speed * 9)
-            self.root.after(delay, lambda: self.generate_maze_dfs(prev_row, prev_col, stack))
-            
-        else:
-            # Generation complete
-            self.algorithm_running = False
-            self.update_stats_text(f"Maze generated. Total cells: {self.gen_steps} | Size: {self.rows}x{self.cols}")
+        # Reset visited flags for solving
+        for row in self.maze:
+            for cell in row:
+                cell.visited = False
     
     def solve_maze_dfs(self):
-        # Initialize and start maze solving using depth-first search.
-        # Explores possible paths until it finds the end, marking the solution path
-        
-        # Prevent multiple solves running at once
+       
         if self.algorithm_running:
             return
         
-        # Ensure we have a maze to solve
         if not self.maze:
             self.update_stats_text("Error: generate a maze first")
             return
         
-        # Reset visited flags
+        # Reset cell states
         for row in self.maze:
             for cell in row:
                 cell.visited = False
@@ -279,15 +256,95 @@ class MazeVisualizer:
         self.update_stats_text("Solving maze...")
         self.root.after(10, lambda: self.dfs_solve(self.start[0], self.start[1], []))
     
-    def dfs_solve(self, row: int, col: int, path: List[Tuple[int, int]]) -> bool:
+    def solve_maze_bfs(self):
+        # Initialize and start BFS maze solving with animation
+        if self.algorithm_running:
+            return
         
+        if not self.maze:
+            self.update_stats_text("Error: generate a maze first")
+            return
+        
+        # Reset cell states
+        for row in self.maze:
+            for cell in row:
+                cell.visited = False
+                cell.in_path = False
+        
+        self.solve_steps = 0
+        self.path_length = 0
+        self.algorithm_running = True
+        
+        self.update_stats_text("Solving maze with BFS...")
+        
+        # Initialize BFS queue: (row, col, path_taken)
+        queue = [(self.start[0], self.start[1], [])]
+        
+        self.root.after(10, lambda: self.bfs_solve_step(queue))
+
+    def bfs_solve_step(self, queue: List[Tuple[int, int, List[Tuple[int, int]]]]):
+        # Process one BFS step with animation (called repeatedly via after)
+        if not self.algorithm_running or not queue:
+            if not queue and self.algorithm_running:
+                self.algorithm_running = False
+                self.update_stats_text("No solution found!")
+            return
+        
+        # Dequeue (FIFO)
+        row, col, path = queue.pop(0)
+        
+        current = self.maze[row][col]
+        if current.visited:
+            delay = max(1, 50 - self.speed * 4)
+            self.root.after(delay, lambda: self.bfs_solve_step(queue))
+            return
+        
+        # Mark visited and update path
+        current.visited = True
+        path = path + [(row, col)]
+        self.solve_steps += 1
+        
+        # Check if reached goal
+        if (row, col) == self.end:
+            for r, c in path:
+                self.maze[r][c].in_path = True
+            self.path_length = len(path)
+            self.algorithm_running = False
+            self.draw_maze()
+            
+            efficiency = (self.path_length / self.solve_steps * 100) if self.solve_steps > 0 else 0
+            self.update_stats_text(
+                f"SOLVED with BFS! Path Length: {self.path_length} | "
+                f"Cells Explored: {self.solve_steps} | "
+                f"Efficiency: {efficiency:.1f}%"
+            )
+            return
+        
+        # Update display
+        self.draw_maze()
+        self.update_stats()
+        
+        # Add neighbors to queue
+        if not current.walls['N'] and row - 1 >= 0 and not self.maze[row - 1][col].visited:
+            queue.append((row - 1, col, path))
+        if not current.walls['S'] and row + 1 < self.rows and not self.maze[row + 1][col].visited:
+            queue.append((row + 1, col, path))
+        if not current.walls['E'] and col + 1 < self.cols and not self.maze[row][col + 1].visited:
+            queue.append((row, col + 1, path))
+        if not current.walls['W'] and col - 1 >= 0 and not self.maze[row][col - 1].visited:
+            queue.append((row, col - 1, path))
+        
+        # Continue to next step
+        delay = max(1, 50 - self.speed * 4)
+        self.root.after(delay, lambda: self.bfs_solve_step(queue))
+    
+    def dfs_solve(self, row: int, col: int, path: List[Tuple[int, int]]) -> bool:
         if not self.algorithm_running:
             return False
         
-        # Check if reached end
+        # Check if reached destination
         if (row, col) == self.end:
             path.append((row, col))
-            # Mark solution path
             for r, c in path:
                 self.maze[r][c].in_path = True
             self.path_length = len(path)
@@ -313,7 +370,7 @@ class MazeVisualizer:
         self.draw_maze()
         self.update_stats()
         
-        # Try all accessible directions (where walls are removed)
+        # Check all accessible directions (no walls)
         moves = []
         if not current.walls['N']:
             moves.append((-1, 0))
@@ -326,7 +383,6 @@ class MazeVisualizer:
         
         delay = max(1, 50 - self.speed * 4)
         
-        # Explore each valid direction
         for dr, dc in moves:
             nr, nc = row + dr, col + dc
             if 0 <= nr < self.rows and 0 <= nc < self.cols:
@@ -338,12 +394,9 @@ class MazeVisualizer:
         return False
     
     def draw_maze(self):
-        # Renders the current state of the maze on the canvas.
-        # Handles dynamic resizing, cell coloring, and wall drawing
-        # Clear previous drawing
         self.canvas.delete("all")
         
-        # Calculate cell size to fit canvas while maintaining square cells
+        # Calculate cell size to fit canvas
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
         
@@ -367,7 +420,7 @@ class MazeVisualizer:
                 x = offset_x + col * self.cell_size
                 y = offset_y + row * self.cell_size
                 
-                # Determine cell color based on state
+                # Determine cell color
                 color = self.COLOR_EMPTY
                 if (row, col) == self.start:
                     color = self.COLOR_START
@@ -378,7 +431,7 @@ class MazeVisualizer:
                 elif cell.visited:
                     color = self.COLOR_VISITED
                 
-                # Draw cell
+                # Draw cell background
                 self.canvas.create_rectangle(
                     x, y,
                     x + self.cell_size,
@@ -419,8 +472,6 @@ class MazeVisualizer:
                     )
     
     def update_stats(self, solved: bool = False):
-        # Update statistics display during algorithm execution
-        
         if solved:
             efficiency = (self.path_length / self.solve_steps * 100) if self.solve_steps > 0 else 0
             text = f"Found solution! Length: {self.path_length}, Explored {self.solve_steps} cells"
@@ -432,12 +483,9 @@ class MazeVisualizer:
         self.stats_label.config(text=text)
     
     def update_stats_text(self, text: str):
-        # Update statistics label with custom text
         self.stats_label.config(text=text)
     
     def reset_maze(self):
-        # Reset the maze to unsolved state
-        
         if self.algorithm_running:
             self.algorithm_running = False
         
@@ -456,12 +504,8 @@ class MazeVisualizer:
 
 
 def main():
-    # Create and start the maze application
-    # Initialize the main window
     root = tk.Tk()
-    # Create the visualizer instance
     app = MazeVisualizer(root)
-    # Start the event loop
     root.mainloop()
 
 if __name__ == "__main__":

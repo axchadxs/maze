@@ -23,22 +23,19 @@ A Python-based maze generator and solver with real-time visualization using Tkin
 
 ### Installation
 
-1. Clone the repository
-```bash
-git clone [your-repo-url]
-cd maze-generator-solver
-```
+Run in Visual Studio Code
+1. Open the project folder in VS Code
+2. Select a Python interpreter (bottom-right)
+3. Open `firstGen.py` and click "Run Python File in Terminal" or press F5 to debug
 
-2. Run the application
-```bash
-python maze_visualizer.py
-```
 
 ### Quick Start
 1. Click "Generate Maze" to create a random maze
-2. Click "Solve Maze" to watch it find the solution
+2. Choose a solver and click the appropriate button:
+  - "Solve Maze using DFS" — explores until it finds a path (first-found)
+  - "Solve Maze using BFS" — finds the shortest path in number of steps
 3. Adjust the maze size and generate new mazes
-4. Use "Reset" to clear the solution and solve again
+4. Use "Reset" to clear the solution and try again
 
 ## 🛠️ Technical Details
 
@@ -57,6 +54,12 @@ python maze_visualizer.py
 - Guarantees finding a solution if one exists
 - Visualizes the exploration process in real-time
 
+**Pathfinding: Breadth-First Search (BFS)**
+- Finds the shortest path (in number of steps) on an unweighted grid
+- Explores nodes by layers outward from the start until it reaches the end
+- Implemented: BFS is available as an alternative solver in the app
+- Useful when you want the shortest route rather than the first-found route
+
 ### Technologies
 - **Python 3** - Core programming language
 - **Tkinter** - GUI framework for visualization
@@ -64,10 +67,10 @@ python maze_visualizer.py
 
 ### Project Structure
 ```
-maze-generator-solver/
+maze/
 │
-├── maze_visualizer.py    # Main application file
-└── README.md            # Documentation
+├── firstGen.py    # Main application file (current)
+└── README.md      # Documentation
 ```
 
 ### Code Highlights
@@ -87,7 +90,7 @@ The app tracks and displays:
 
 ## 🔮 Future Enhancements
 
-- [ ] Additional solving algorithms (BFS, A*, Dijkstra)
+- [ ] Additional solving algorithms (A*, Dijkstra)
 - [ ] Different maze generation algorithms (Prim's, Kruskal's)
 - [ ] Export maze as image
 - [ ] Save/load maze configurations
